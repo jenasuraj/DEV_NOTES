@@ -90,6 +90,10 @@ Technical SEO is mainly about making sure search engines like Google can properl
 
 # How to implement SEO with Next.js
 
+<br/>
+### 1 - MetaData
+<br/>
+
 Metadata in Next.js is a simple way to describe what your page is about so that search engines like Google and social platforms can understand and display it correctly. Instead of manually writing <head> tags, you define a metadata object, and Next.js automatically generates the correct title, description, and sharing previews. This helps your page appear properly in search results and when someone shares your link, making it more clickable and clear.
 ```
 export const metadata: Metadata = {
@@ -136,6 +140,9 @@ export const metadata: Metadata = {
 
 <br/>
 
+### 2 - Sitemap
+<br/>
+
 A sitemap is a file that lists all the important pages of your website so search engines can easily discover them. Instead of relying only on links, the sitemap directly tells search engines which pages exist and should be checked. This is especially useful when your site has many pages or some pages are not easily reachable through navigation.
 
 ```
@@ -170,6 +177,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ];
 }
 ```
+<br/>
+
+### 3 - Robots.txt
 <br/>
 
 The robots.txt file is used to control what search engine bots are allowed to access on your website. It acts like a guide, telling bots which pages they can crawl and which ones they should ignore. This helps prevent unnecessary or sensitive pages from being indexed and ensures that search engines focus only on your important content.
