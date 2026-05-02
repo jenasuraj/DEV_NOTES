@@ -115,6 +115,24 @@ export const metadata: Metadata = {
   },
 };
 ```
+| Field | What it does | Why it matters |
+|------|-------------|---------------|
+| title | Defines the page title shown in search results and browser tab | Strong SEO signal, affects ranking and click rate |
+| description | Short summary of the page content | Improves click-through rate (CTR) in search results |
+| alternates.canonical | Specifies the main/original URL of the page | Prevents duplicate content issues |
+| keywords | List of keywords related to the page | Minor importance now, but gives basic context |
+| openGraph.siteName | Name of the website for social sharing | Helps branding in link previews |
+| openGraph.locale | Language/region of the page (e.g., en_AU) | Helps target specific audience/location |
+| openGraph.url | Canonical URL used in social previews | Ensures correct link is shared |
+| openGraph.title | Title shown when link is shared | Improves visibility and clicks on social platforms |
+| openGraph.description | Description shown in link preview | Gives context to users before clicking |
+| openGraph.images | Image shown in preview (with size & alt) | Makes shared links visually attractive |
+| openGraph.type | Type of content (e.g., website, article) | Helps platforms understand content format |
+| twitter.site | Twitter handle associated with the site | Adds credibility and branding |
+| twitter.card | Type of Twitter preview (e.g., summary_large_image) | Controls layout of shared link |
+| twitter.title | Title shown in Twitter preview | Improves engagement on Twitter |
+| twitter.description | Description for Twitter card | Helps users understand content quickly |
+| twitter.images | Image shown in Twitter preview | Increases visibility and clicks |
 
 A sitemap is a file that lists all the important pages of your website so search engines can easily discover them. Instead of relying only on links, the sitemap directly tells search engines which pages exist and should be checked. This is especially useful when your site has many pages or some pages are not easily reachable through navigation.
 
