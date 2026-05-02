@@ -35,6 +35,7 @@ SEO is 3 types - >
 <br/>
 3 - Technical SEO
 <br/>
+<br/>
 
 ### ON Page SEO
 On-page SEO traditionally means optimizing everything inside a single web page so that search engines like Google can clearly understand what the page is about and show it for the right searches. Earlier (before frameworks like Next.js), developers manually wrote HTML and placed SEO elements directly inside the <head> and content of the page. The idea was simple: clearly tell the search engine the topic of the page and make the content useful for users.
@@ -63,4 +64,12 @@ The most important parts were the title tag, meta description, headings (H1, H2)
 </body>
 </html>
 ```
+
+<br/>
+<br/>
+
+### OFF Page SEO
+Off-page SEO is about building your website’s reputation outside your own pages so that search engines like Google can decide whether your site is trustworthy enough to rank higher. When other websites link to your content, mention your brand, or share your pages, it acts like a signal that your content is valuable. But search engines don’t treat all signals equally—they look at the quality and relevance of those sources. A link from a well-known, respected website in your niche carries much more weight than many links from random or low-quality sites. This is because search engines are designed to give users the best possible results, so they rely on trusted sources as a way to judge credibility. If a reliable website recommends your content, it’s similar to a strong recommendation in real life—it builds confidence that your page is worth showing to users.
+
+This is why only great and trusted content tends to rank higher through off-page SEO. High-quality content naturally attracts genuine backlinks, shares, and mentions, while low-quality or spammy content either gets ignored or attracts poor-quality links that don’t help. Search engines analyze patterns like who is linking to you, how relevant those sites are, and whether users engage with your content. If everything points to your site being useful and reliable, your rankings improve. But if the signals look artificial or low quality, your site won’t gain authority and may even be pushed down. In simple terms, off-page SEO is not just about being popular—it’s about earning trust from the right sources, and that trust is what search engines use to decide which websites deserve to be at the top.
 
