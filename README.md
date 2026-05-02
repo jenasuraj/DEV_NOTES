@@ -134,6 +134,8 @@ export const metadata: Metadata = {
 | twitter.description | Description for Twitter card | Helps users understand content quickly |
 | twitter.images | Image shown in Twitter preview | Increases visibility and clicks |
 
+<br/>
+
 A sitemap is a file that lists all the important pages of your website so search engines can easily discover them. Instead of relying only on links, the sitemap directly tells search engines which pages exist and should be checked. This is especially useful when your site has many pages or some pages are not easily reachable through navigation.
 
 ```
@@ -168,6 +170,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ];
 }
 ```
+<br/>
 
 The robots.txt file is used to control what search engine bots are allowed to access on your website. It acts like a guide, telling bots which pages they can crawl and which ones they should ignore. This helps prevent unnecessary or sensitive pages from being indexed and ensures that search engines focus only on your important content.
 ```
