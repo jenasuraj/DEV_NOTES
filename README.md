@@ -91,7 +91,9 @@ Technical SEO is mainly about making sure search engines like Google can properl
 # How to implement SEO with Next.js
 
 <br/>
+
 ### 1 - MetaData
+
 <br/>
 
 Metadata in Next.js is a simple way to describe what your page is about so that search engines like Google and social platforms can understand and display it correctly. Instead of manually writing <head> tags, you define a metadata object, and Next.js automatically generates the correct title, description, and sharing previews. This helps your page appear properly in search results and when someone shares your link, making it more clickable and clear.
