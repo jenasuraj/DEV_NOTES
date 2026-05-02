@@ -28,8 +28,11 @@ In simple terms, if crawling means “finding your page,” indexing means “un
 ## SEO Implementation & Types :
 
 SEO is 3 types - >
+<br/>
 1 - on page SEO
+<br/>
 2 - off page SEO
+<br/>
 3 - Technical SEO
 <br/>
 
