@@ -205,3 +205,80 @@ IMPORTANT -> You can add sitemap.ts and robots.ts within the /app in next js cuz
 
 
 # Dynamic SEO
+<br/>
+Now its time to explore dynamic SEO i.e instead of making metadata all by yourself in static manner, you will be building from the API response or the collections from your /data folder . next js supports this using a inbuilt function i.e generateMetaData. you can explore the code below ->
+<br/>
+```
+export async function generateMetadata({ params }: PageProps, parent: ResolvingMetadata): Promise<Metadata> {
+  const { slug } = await params
+  try {
+    const response = await fetch(
+      `https://mockAPI/${slug}`,
+      { next: { revalidate: 3600 } } 
+    )
+    if (!response.ok) {
+      throw new Error('Failed to fetch blog post')
+    }
+    const metapost = await response.json()
+    const blogData = metapost.blogData
+    const baseUrl = 'https://bombaydecoratives.com/'
+    const postUrl = `${baseUrl}/blogs/${slug}`
+
+    //Has to be changed a bit with actual domain ...
+
+    return {
+      title: blogData.title,
+      description: blogData.subheading,
+      
+      // Open Graph metadata
+      openGraph: {
+        title: blogData.title,
+        description: blogData.subheading,
+        url: postUrl,
+        siteName: 'bombaydecoratives',
+        images: [
+          {
+            url: blogData.image,
+            width: 1200,
+            height: 630,
+            alt: blogData.title,
+          },
+        ],
+        locale: 'en_US',
+        type: 'article',
+        publishedTime: metapost.createdAt,
+        authors: ['buyflatsinmalad'],
+      },
+
+      twitter: {
+      card: 'summary_large_image',
+      title: blogData.title,
+      description: blogData.subheading,
+      images: [
+        {
+          url: blogData.image,
+          alt: blogData.title,
+          width: 1200,
+          height: 675, // 16:9 ratio for Twitter
+          type: 'image/jpeg',
+        },
+      ],
+    },
+      keywords: blogData.tags,
+      alternates: {
+        canonical: postUrl,
+      },
+    }
+
+  } catch (error) {
+    console.error("Error generating metadata:", error)
+    
+    // Fallback metadata if fetch fails
+    return {
+      title: 'Blog Post | Bombay decoratives',
+      description: 'Read our latest blog post',
+    }
+  }
+}
+```
+---> ALSO THE SITEMAP.XML MAY HAVE MANY URLS LIKE mockdomain.com/1 or mockdomain.com/anything that is generated dynamically so, these all can be produced i.e we can add a looping condition and generate all sitemap dynamically
