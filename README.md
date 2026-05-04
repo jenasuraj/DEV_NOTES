@@ -208,6 +208,8 @@ IMPORTANT -> You can add sitemap.ts and robots.ts within the /app in next js cuz
 <br/>
 Now its time to explore dynamic SEO i.e instead of making metadata all by yourself in static manner, you will be building from the API response or the collections from your /data folder . next js supports this using a inbuilt function i.e generateMetaData. you can explore the code below ->
 <br/>
+
+
 ```
 export async function generateMetadata({ params }: PageProps, parent: ResolvingMetadata): Promise<Metadata> {
   const { slug } = await params
@@ -281,4 +283,6 @@ export async function generateMetadata({ params }: PageProps, parent: ResolvingM
   }
 }
 ```
+
+
 ---> ALSO THE SITEMAP.XML MAY HAVE MANY URLS LIKE mockdomain.com/1 or mockdomain.com/anything that is generated dynamically so, these all can be produced i.e we can add a looping condition and generate all sitemap dynamically
