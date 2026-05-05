@@ -13,6 +13,4 @@ A personal collection of in-depth developer notes written for clarity — coveri
 
 ---
 
-## Author
-
-**Suraj** — notes written from real project experience, not just documentation.
+---->忍びの時代は終わった 💀🤣
