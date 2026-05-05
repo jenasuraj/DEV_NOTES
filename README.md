@@ -1,3 +1,4 @@
+
 # 🔍 SEO — Complete Developer Notes
 
 > **Search Engine Optimization** is the discipline of making your website *discoverable, understandable, and trustworthy* to search engines — so users find you organically, without paid ads.
@@ -16,8 +17,21 @@
    - [Metadata](#1--metadata)
    - [Sitemap](#2--sitemap)
    - [Robots.txt](#3--robotstxt)
-5. [Dynamic SEO](#dynamic-seo)
-6. [Quick Reference Cheatsheet](#quick-reference-cheatsheet)
+5. [Structured Data — JSON-LD](#structured-data--json-ld)
+   - [What is JSON-LD?](#what-is-json-ld)
+   - [How Google Uses It](#how-google-uses-it)
+   - [The @graph Pattern](#the-graph-pattern)
+   - [Common Schema Types](#common-schema-types)
+   - [Static Page Example (About Page)](#static-page-example--about-page)
+   - [JSON-LD in Next.js](#json-ld-in-nextjs)
+6. [Dynamic SEO — End to End](#dynamic-seo--end-to-end)
+   - [The Mental Model](#the-mental-model)
+   - [Step-by-Step: Blog Post Page](#step-by-step-blog-post-page)
+   - [Dynamic Metadata](#step-1--generate-dynamic-metadata)
+   - [Dynamic JSON-LD](#step-2--generate-dynamic-json-ld)
+   - [Dynamic Sitemap](#step-3--dynamic-sitemap)
+   - [The Full File Together](#the-full-file-together)
+7. [Quick Reference Cheatsheet](#quick-reference-cheatsheet)
 
 ---
 
@@ -241,7 +255,7 @@ Next.js provides first-class SEO support through its Metadata API, built-in file
 
 ### 1 — Metadata
 
-The `metadata` export in Next.js automatically generates `<title>`, `<meta>`, Open Graph, and Twitter Card tags. it must be used in server components  and each pages in next js has its own metadata to represent that particular page.
+The `metadata` export in Next.js automatically generates `<title>`, `<meta>`, Open Graph, and Twitter Card tags. It must be used in Server Components, and each page in Next.js has its own metadata object to represent that particular page.
 
 ```ts
 // app/page.tsx (Server Component)
@@ -310,7 +324,7 @@ export const metadata: Metadata = {
 
 ### 2 — Sitemap
 
-In Next.js, create `app/sitemap.ts` and it automatically generates `/sitemap.xml`. sitemap lists all the endpoints available in your app.
+In Next.js, create `app/sitemap.ts` and it automatically generates `/sitemap.xml`. The sitemap lists all the endpoints available in your app.
 
 ```ts
 // app/sitemap.ts
@@ -349,7 +363,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Content & engagement pages
     { url: `${base}/case-studies`,                    lastModified: now, changeFrequency: 'weekly',  priority: 0.7 },
     { url: `${base}/blogs`,                           lastModified: now, changeFrequency: 'weekly',  priority: 0.7 },
-    { url: `${base}/hockey`,                          lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
 
     // Lowest priority — rarely changes
     { url: `${base}/contact-us`,                      lastModified: now, changeFrequency: 'yearly',  priority: 0.6 },
@@ -417,105 +430,797 @@ Sitemap: https://www.automatorr.com/sitemap.xml
 
 ---
 
-## Dynamic SEO
+## Structured Data — JSON-LD
 
-Static metadata works great for fixed pages, but what about **blog posts, product pages, or any URL with dynamic content**? That's where `generateMetadata` comes in.
+### What is JSON-LD?
 
-Instead of writing metadata manually, Next.js fetches the data for that specific page and generates metadata from it — automatically, per page. what we often do when we work in /blogs is first we let the blogs page i.e slug
+So far, everything we've covered tells Google *surface-level* things about your page — the title, description, and which URLs exist. But search engines are becoming increasingly intelligent, and they want to understand the *meaning* behind your content, not just the words.
+
+**JSON-LD (JavaScript Object Notation for Linked Data)** is a structured data format that lets you describe the entities on your page in a way that machines can definitively understand.
+
+Think of it this way: when a human reads your About page, they naturally understand "Oh, this company was founded in 2006, they're based in Sydney, and this person named Rajesh Nair started it." A search engine reading raw HTML struggles to make those same connections reliably. JSON-LD gives you a way to explicitly state those facts in a universal machine-readable format.
+
+```
+What metadata does           →   "Here's the title and description"
+What JSON-LD does            →   "This is an Organization. Its founder is a Person.
+                                  That Person's name is Rajesh Nair. The organization
+                                  was founded in 2006. It is located in Sydney."
+```
+
+> **In short:** Metadata is for browsers and social previews. JSON-LD is for search engines to deeply understand the *entities* on your page.
+
+### How Google Uses It
+
+When Google reads your JSON-LD correctly, it can unlock **rich results** — enhanced search listings that go far beyond the basic blue link. These visually stand out and dramatically increase click-through rates.
+
+```
+Without JSON-LD:
+┌────────────────────────────────────────────────────────────────┐
+│ Automatorr | Technology Partner Sydney                         │
+│ https://www.automatorr.com/about                               │
+│ Delivering automation and CRM solutions since 2006.            │
+└────────────────────────────────────────────────────────────────┘
+
+With JSON-LD (Article schema on a blog):
+┌────────────────────────────────────────────────────────────────┐
+│ How to Automate Your Invoice Processing                        │
+│ https://www.automatorr.com/blogs/invoice-automation            │
+│ ★★★★★  12 reviews · By Rajesh Nair · May 2, 2025             │
+│ Learn how to cut invoice processing time by 80% using RPA...   │
+└────────────────────────────────────────────────────────────────┘
+```
+
+**Types of rich results JSON-LD can unlock:**
+
+| Schema Type | What It Shows in Google |
+|---|---|
+| `Article` / `BlogPosting` | Author name, publish date, breadcrumbs |
+| `Product` | Price, availability, star ratings |
+| `FAQPage` | Expandable Q&A directly in search results |
+| `Organization` | Knowledge panel with logo, socials, founding date |
+| `Person` | Author profile in Google's Knowledge Graph |
+| `BreadcrumbList` | Navigation trail shown under the URL |
+| `WebSite` | Enables the search box within your Google listing |
+| `LocalBusiness` | Map listing, hours, phone number |
+| `Event` | Date, location, ticket link in results |
+| `Recipe` | Cooking time, ingredients, star rating |
+
+---
+
+### The `@graph` Pattern
+
+You'll notice in the real-world example that JSON-LD uses something called `@graph`. This is important to understand.
+
+A webpage is rarely about just *one* thing. An About page is simultaneously:
+- A `WebPage` (a URL that exists on the internet)
+- About an `Organization` (the company)
+- Written by or featuring a `Person` (the founder)
+
+You could write three separate JSON-LD `<script>` blocks — one for each entity. But the `@graph` pattern lets you describe all of them **in a single script block** and, crucially, **link them together** using `@id` references.
+
+```
+Without @graph — three disconnected facts:
+  Script 1: "There is a WebPage at /about"
+  Script 2: "There is an Organization called Automatorr"
+  Script 3: "There is a Person called Rajesh Nair"
+
+With @graph — three connected facts:
+  "There is a WebPage at /about
+   └─ which is ABOUT the Organization #automatorr-org
+   The Organization #automatorr-org
+   └─ has a FOUNDER who is Person #rajesh-nair
+   The Person #rajesh-nair
+   └─ WORKS FOR Organization #automatorr-org"
+```
+
+The `@id` field acts like a unique identifier — an internal anchor — so that different entities in the graph can reference each other. Google reads this as a connected knowledge graph, not just scattered data points. This is what allows Google to build rich Knowledge Panels about your brand.
+
+**The pattern in code:**
+
+```json
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://www.example.com/about#webpage",
+      "name": "About Us",
+      "about": {
+        "@id": "https://www.example.com/#organization"  // ← points to the org below
+      }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://www.example.com/#organization",   // ← referenced above
+      "name": "Example Co",
+      "founder": {
+        "@id": "https://www.example.com/#founder"       // ← points to person below
+      }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://www.example.com/#founder",        // ← referenced above
+      "name": "Jane Doe",
+      "worksFor": {
+        "@id": "https://www.example.com/#organization"  // ← back to the org
+      }
+    }
+  ]
+}
+```
+
+> **Rule of thumb for `@id` naming:** Use your domain as the base, then add a `#fragment` that describes the entity type. Keep them consistent across all pages — `#organization` should always refer to the same organization, site-wide.
+
+---
+
+### Common Schema Types
+
+Before looking at complete examples, here is a reference for the fields you'll use most often in each schema type.
+
+#### `Organization`
+
+```json
+{
+  "@type": "Organization",
+  "@id": "https://www.example.com/#organization",
+  "name": "Example Co",
+  "url": "https://www.example.com",
+  "logo": {
+    "@type": "ImageObject",
+    "url": "https://www.example.com/logo.png",
+    "width": 200,
+    "height": 60
+  },
+  "foundingDate": "2006",
+  "description": "A technology company based in Sydney.",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Sydney",
+    "addressRegion": "NSW",
+    "addressCountry": "AU"
+  },
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "customer support",
+    "email": "hello@example.com"
+  },
+  "sameAs": [
+    "https://www.linkedin.com/company/example-co",
+    "https://twitter.com/exampleco"
+  ]
+}
+```
+
+#### `WebSite`
+
+```json
+{
+  "@type": "WebSite",
+  "@id": "https://www.example.com/#website",
+  "url": "https://www.example.com",
+  "name": "Example Co",
+  "publisher": {
+    "@id": "https://www.example.com/#organization"
+  },
+  "inLanguage": "en-AU"
+}
+```
+
+#### `WebPage`
+
+```json
+{
+  "@type": "WebPage",
+  "@id": "https://www.example.com/about#webpage",
+  "url": "https://www.example.com/about",
+  "name": "About Example Co",
+  "description": "Learn about our team and mission.",
+  "isPartOf": { "@id": "https://www.example.com/#website" },
+  "about": { "@id": "https://www.example.com/#organization" },
+  "primaryImageOfPage": {
+    "@type": "ImageObject",
+    "url": "https://www.example.com/og/about.png",
+    "width": 1200,
+    "height": 630
+  },
+  "inLanguage": "en-AU"
+}
+```
+
+#### `BlogPosting` / `Article`
+
+```json
+{
+  "@type": "BlogPosting",
+  "@id": "https://www.example.com/blogs/my-post#article",
+  "headline": "How to Automate Your Invoice Processing",
+  "description": "A step-by-step guide to cutting invoice processing time by 80%.",
+  "url": "https://www.example.com/blogs/my-post",
+  "datePublished": "2025-05-01T09:00:00+10:00",
+  "dateModified": "2025-05-10T12:00:00+10:00",
+  "author": {
+    "@type": "Person",
+    "name": "Rajesh Nair"
+  },
+  "publisher": {
+    "@id": "https://www.example.com/#organization"
+  },
+  "image": {
+    "@type": "ImageObject",
+    "url": "https://www.example.com/blogs/my-post/cover.jpg",
+    "width": 1200,
+    "height": 630
+  },
+  "mainEntityOfPage": {
+    "@id": "https://www.example.com/blogs/my-post#webpage"
+  },
+  "keywords": ["invoice automation", "RPA", "workflow"],
+  "inLanguage": "en-AU"
+}
+```
+
+#### `BreadcrumbList`
+
+```json
+{
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.example.com"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Blogs",
+      "item": "https://www.example.com/blogs"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "How to Automate Your Invoice Processing",
+      "item": "https://www.example.com/blogs/my-post"
+    }
+  ]
+}
+```
+
+#### `FAQPage`
+
+```json
+{
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is RPA?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "RPA (Robotic Process Automation) is software technology that automates repetitive, rule-based digital tasks."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How long does implementation take?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A typical RPA implementation takes between 4 and 12 weeks depending on complexity."
+      }
+    }
+  ]
+}
+```
+
+---
+
+### Static Page Example — About Page
+
+Here is the complete, production-ready About page with full JSON-LD, pulled from a real project. Study this carefully — it shows how `WebPage`, `Person`, and `Organization` are linked together in one `@graph`.
+
+```tsx
+// app/about/page.tsx
+
+import AboutHero from '@/src/sections/about/hero'
+import ComplexHorizontalScroll from '@/src/sections/about/scroll-info'
+import TeamScrollMobile from '@/src/sections/about/team-mobile'
+import React from 'react'
+import { Metadata } from 'next'
+
+// ─────────────────────────────────────────────
+// STEP 1: Static Metadata (for <head> tags)
+// ─────────────────────────────────────────────
+export const metadata: Metadata = {
+  title: 'About Automatorr | Technology Partner Sydney — Est. 2006',
+  description: 'Automatorr has delivered technology solutions with clarity and care since 2006. Based in Sydney, serving Australia, New Zealand and APAC. Meet the team behind the work.',
+  alternates: { canonical: 'https://www.automatorr.com/about' },
+  keywords: [
+    "technology partner Australia",
+    "automation company Sydney",
+    "about Automatorr",
+    "Rajesh Nair CEO",
+    "Australian technology consultancy",
+    "APAC technology services"
+  ],
+  openGraph: {
+    siteName: "Automatorr",
+    locale: 'en_AU',
+    url: 'https://www.automatorr.com/about',
+    title: 'About Automatorr — Sydney Technology Partner Since 2006',
+    description: 'Delivering automation, CRM and managed IT with clarity and care since 2006. 50+ clients. 83% avg ROI. Sydney, Australia.',
+    images: [{
+      url: 'https://www.automatorr.com/og/about.png',
+      width: 1200,
+      height: 630,
+      alt: 'About Automatorr — Sydney Technology Partner Since 2006'
+    }],
+    type: 'website',
+  },
+  twitter: {
+    site: "@automatorr_nair",
+    card: 'summary_large_image',
+    title: 'About Automatorr — Sydney Technology Partner Since 2006',
+    description: 'Delivering automation, CRM and managed IT with clarity and care since 2006. 50+ clients. 83% avg ROI.',
+    images: ['https://www.automatorr.com/og/about.png'],
+  },
+};
+
+// ─────────────────────────────────────────────
+// STEP 2: JSON-LD (for Google's Knowledge Graph)
+// ─────────────────────────────────────────────
+//
+// This uses the @graph pattern to describe three connected entities:
+//   1. The WebPage itself (the /about URL)
+//   2. The Person (Rajesh Nair, the founder)
+//
+// Notice how they reference each other using @id — Google reads this
+// as a connected graph, not isolated data points.
+// ─────────────────────────────────────────────
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      // Entity 1: The WebPage
+      // Describes the /about page itself as a URL on the internet
+      "@type": "WebPage",
+      "@id": "https://www.automatorr.com/about#webpage",
+      "url": "https://www.automatorr.com/about",
+      "name": "About Automatorr | Technology Partner Sydney — Est. 2006",
+      "description": "Automatorr has delivered technology solutions with clarity and care since 2006. Based in Sydney, serving Australia, New Zealand and APAC.",
+      "isPartOf": {
+        // This page belongs to the broader website entity
+        "@id": "https://www.automatorr.com/#website"
+      },
+      "about": {
+        // The subject of this page is the organization
+        "@id": "https://www.automatorr.com/#organization"
+      },
+      "primaryImageOfPage": {
+        "@type": "ImageObject",
+        "url": "https://www.automatorr.com/og/about.png",
+        "width": 1200,
+        "height": 630,
+        "caption": "About Automatorr — Sydney Technology Partner Since 2006"
+      },
+      "inLanguage": "en-AU"
+    },
+    {
+      // Entity 2: The Person (Founder)
+      // Describes Rajesh Nair as a real-world person entity
+      "@type": "Person",
+      "@id": "https://www.automatorr.com/#founder",
+      "name": "Rajesh Nair",
+      "jobTitle": "Founder",
+      "worksFor": {
+        // Links this person back to the organization entity
+        "@id": "https://www.automatorr.com/#organization"
+      },
+      "description": "Founder of Automatorr, a Sydney-based technology partner delivering automation, CRM, and managed IT solutions since 2006."
+    }
+  ]
+};
+
+// ─────────────────────────────────────────────
+// STEP 3: Page Component
+// ─────────────────────────────────────────────
+const page = () => {
+  return (
+    <>
+      {/*
+        The JSON-LD is injected as a raw <script> tag in the HTML.
+        dangerouslySetInnerHTML is safe here — we own and control the data.
+        Google's crawler reads this script tag from the raw HTML.
+      */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <AboutHero />
+      <ComplexHorizontalScroll />
+      <TeamScrollMobile />
+    </>
+  )
+}
+
+export default page
+```
+
+**What Google sees after parsing this page:**
+
+```
+Knowledge extracted:
+  ✅ There is a WebPage at /about
+  ✅ That page is about an Organization (defined elsewhere as #organization)
+  ✅ There is a Person named Rajesh Nair
+  ✅ Rajesh is the Founder and works for that same Organization
+  ✅ The page has a primary image at /og/about.png
+  ✅ The content is in Australian English
+```
+
+> 💡 Notice that `#organization` and `#website` are referenced with `@id` but not *defined* on this page. They are defined on the **homepage** (`/`) where it makes most sense — the About page simply *links to* them. This is the correct pattern: define global entities once (on your root or layout), reference them everywhere else.
+
+---
+
+### JSON-LD in Next.js
+
+There are two ways to add JSON-LD in Next.js:
+
+#### Method 1 — Inline in the Page Component (recommended for page-specific data)
+
+```tsx
+const jsonLd = { /* your schema */ };
+
+export default function Page() {
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* rest of page */}
+    </>
+  );
+}
+```
+
+#### Method 2 — In the Root Layout (for site-wide entities)
+
+Your `Organization` and `WebSite` schemas don't change per page — they describe your entire brand. Define them once in your root layout so they appear on every page.
+
+```tsx
+// app/layout.tsx
+const siteJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://www.automatorr.com/#organization",
+      "name": "Automatorr",
+      "url": "https://www.automatorr.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.automatorr.com/logo.png",
+        "width": 200,
+        "height": 60
+      },
+      "foundingDate": "2006",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Sydney",
+        "addressRegion": "NSW",
+        "addressCountry": "AU"
+      },
+      "sameAs": [
+        "https://www.linkedin.com/company/automatorr",
+        "https://twitter.com/automatorr_nair"
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.automatorr.com/#website",
+      "url": "https://www.automatorr.com",
+      "name": "Automatorr",
+      "publisher": {
+        "@id": "https://www.automatorr.com/#organization"
+      },
+      "inLanguage": "en-AU"
+    }
+  ]
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en-AU">
+      <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
+        />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+> **Best practice:** Put `Organization` + `WebSite` in `layout.tsx`. Put `WebPage`, `BlogPosting`, `BreadcrumbList`, and other page-specific schemas inside each page file. This way, every page inherits the global brand identity and adds its own specific context on top.
+
+---
+
+## Dynamic SEO — End to End
+
+### The Mental Model
+
+Static pages are easy — you write your metadata and JSON-LD by hand once, and they never change. But real-world applications have hundreds or thousands of pages generated from data. Think:
+
+- `/blogs/how-to-automate-invoices` — a specific blog post from your CMS
+- `/products/blue-running-shoe-42` — a product from your database
+- `/case-studies/client-x-rpa-project` — a case study fetched from an API
+
+Every one of these pages needs its own unique metadata and JSON-LD — you can't write it by hand. **Dynamic SEO is the practice of generating all of this automatically from your data.**
+
+Here's the complete mental model for how a dynamic page works in Next.js:
+
+```
+User visits: /blogs/how-to-automate-invoices
+                      │
+                      ▼
+          Next.js extracts the slug
+          slug = "how-to-automate-invoices"
+                      │
+          ┌───────────┴───────────────────────────┐
+          │                                       │
+          ▼                                       ▼
+  generateMetadata()                     Page Component
+  (runs on the server,                   (runs on the server,
+   before the page renders)              renders the UI)
+          │                                       │
+          ▼                                       ▼
+  fetch(`/api/blogs/${slug}`)       fetch(`/api/blogs/${slug}`)
+          │                                       │
+          ▼                                       ▼
+  Builds <title>, <meta>,            Builds JSON-LD object from data
+  Open Graph, Twitter Card           Renders <script> + page sections
+          │                                       │
+          ▼                                       ▼
+  Injected into <head>              Injected into <body>
+```
+
+Notice that both functions fetch the same API. Next.js automatically **deduplicates** these fetch calls — if you call the same URL with the same options in the same render cycle, it only hits the network once. So there is no performance penalty for fetching in both places.
+
+---
+
+### Step-by-Step: Blog Post Page
+
+Let's walk through building `/blogs/[slug]/page.tsx` from scratch, step by step.
+
+**The file and folder structure:**
+
+```
+app/
+└── blogs/
+    ├── page.tsx              ← The /blogs listing page
+    └── [slug]/
+        └── page.tsx          ← The individual blog post page (dynamic)
+```
+
+The `[slug]` in the folder name is Next.js's dynamic routing syntax. When someone visits `/blogs/invoice-automation`, Next.js extracts `"invoice-automation"` as the `slug` parameter and passes it to your page.
+
+---
+
+### Step 1 — Generate Dynamic Metadata
 
 ```ts
 // app/blogs/[slug]/page.tsx
 import { Metadata, ResolvingMetadata } from 'next';
 
+// The params object Next.js provides — always a Promise in Next.js 15+
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
+// generateMetadata runs SERVER-SIDE before the page renders
+// Its job: fetch the blog post data and build the <head> tags from it
 export async function generateMetadata(
   { params }: PageProps,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
+
+  // Step 1: Unwrap the slug from the params Promise
   const { slug } = await params;
 
+  const baseUrl = 'https://www.automatorr.com';
+  const postUrl = `${baseUrl}/blogs/${slug}`;
+
   try {
+    // Step 2: Fetch the blog post data from your API using the slug
+    // next: { revalidate: 3600 } means Next.js caches this for 1 hour (ISR)
+    // After 1 hour, the next visitor triggers a fresh fetch in the background
     const response = await fetch(
-      `https://your-api.com/blogs/${slug}`,
-      { next: { revalidate: 3600 } }  // ISR: re-fetch every 1 hour
+      `${baseUrl}/api/blogs/${slug}`,
+      { next: { revalidate: 3600 } }
     );
 
-    if (!response.ok) throw new Error('Failed to fetch blog post');
+    if (!response.ok) throw new Error('Blog post not found');
 
-    const metapost = await response.json();
-    const blogData = metapost.blogData;
-    const baseUrl = 'https://bombaydecoratives.com';
-    const postUrl = `${baseUrl}/blogs/${slug}`;
+    // Step 3: Parse the response
+    const data = await response.json();
+    // Assuming API returns: { title, subheading, image, tags, createdAt, author }
 
+    // Step 4: Build and return the metadata object from real data
     return {
-      title: blogData.title,
-      description: blogData.subheading,
-      keywords: blogData.tags,
+      title: `${data.title} | Automatorr Blog`,
+      description: data.subheading,
+      keywords: data.tags,
       alternates: {
         canonical: postUrl,
       },
       openGraph: {
-        title: blogData.title,
-        description: blogData.subheading,
+        title: data.title,
+        description: data.subheading,
         url: postUrl,
-        siteName: 'Bombay Decoratives',
+        siteName: 'Automatorr',
+        locale: 'en_AU',
+        type: 'article',                    // ← "article" not "website" for blog posts
+        publishedTime: data.createdAt,      // ← OG supports publish date for articles
+        authors: [data.author ?? 'Automatorr'],
         images: [{
-          url: blogData.image,
+          url: data.image,
           width: 1200,
           height: 630,
-          alt: blogData.title,
+          alt: data.title,
         }],
-        locale: 'en_US',
-        type: 'article',
-        publishedTime: metapost.createdAt,
-        authors: ['Bombay Decoratives'],
       },
       twitter: {
         card: 'summary_large_image',
-        title: blogData.title,
-        description: blogData.subheading,
-        images: [{
-          url: blogData.image,
-          alt: blogData.title,
-          width: 1200,
-          height: 675,  // 16:9 ratio
-          type: 'image/jpeg',
-        }],
+        title: data.title,
+        description: data.subheading,
+        images: [{ url: data.image, alt: data.title }],
       },
     };
 
   } catch (error) {
-    console.error('Error generating metadata:', error);
-
-    // Graceful fallback if API fails
+    // Step 5: Always provide a fallback — if the API fails, don't crash
+    // A graceful fallback is better than a broken page with no metadata
+    console.error(`Failed to generate metadata for blog/${slug}:`, error);
     return {
-      title: 'Blog Post | Bombay Decoratives',
-      description: 'Read our latest blog post.',
+      title: 'Blog Post | Automatorr',
+      description: 'Read our latest insights on automation and technology.',
     };
   }
 }
 ```
 
-### Dynamic Sitemaps for Dynamic Routes
+---
 
-When your site generates hundreds or thousands of URLs dynamically (e.g. `/blogs/post-1`, `/blogs/post-2`, ...), you can loop over all your content and generate sitemap entries for each one:
+### Step 2 — Generate Dynamic JSON-LD
+
+The JSON-LD for a blog post is generated inside the **page component itself**, using the same fetched data. This gives Google rich structured data about the article — author, dates, breadcrumbs, and more.
+
+```tsx
+// Still in app/blogs/[slug]/page.tsx
+
+// A helper function that takes your blog data and builds the JSON-LD object
+// Keeping this separate makes it clean, testable, and easy to update
+function buildBlogJsonLd(data: BlogData, slug: string) {
+  const baseUrl = 'https://www.automatorr.com';
+  const postUrl = `${baseUrl}/blogs/${slug}`;
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        // Entity 1: The individual blog post page (the URL)
+        "@type": "WebPage",
+        "@id": `${postUrl}#webpage`,
+        "url": postUrl,
+        "name": data.title,
+        "description": data.subheading,
+        "isPartOf": {
+          "@id": `${baseUrl}/#website`         // ← references the WebSite defined in layout.tsx
+        },
+        "primaryImageOfPage": {
+          "@type": "ImageObject",
+          "url": data.image,
+          "width": 1200,
+          "height": 630,
+          "caption": data.title
+        },
+        "inLanguage": "en-AU",
+        "breadcrumb": {
+          "@id": `${postUrl}#breadcrumb`        // ← references the breadcrumb below
+        }
+      },
+      {
+        // Entity 2: The article content itself
+        // BlogPosting is a subtype of Article — use it for blog posts specifically
+        "@type": "BlogPosting",
+        "@id": `${postUrl}#article`,
+        "headline": data.title,
+        "description": data.subheading,
+        "url": postUrl,
+        "datePublished": data.createdAt,        // ← ISO 8601 format: "2025-05-01T09:00:00+10:00"
+        "dateModified": data.updatedAt ?? data.createdAt,
+        "author": {
+          "@type": "Person",
+          "name": data.author ?? "Automatorr Team",
+        },
+        "publisher": {
+          "@id": `${baseUrl}/#organization`     // ← references the Organization from layout.tsx
+        },
+        "image": {
+          "@type": "ImageObject",
+          "url": data.image,
+          "width": 1200,
+          "height": 630
+        },
+        "keywords": data.tags?.join(", "),
+        "mainEntityOfPage": {
+          "@id": `${postUrl}#webpage`           // ← links article back to its WebPage
+        },
+        "inLanguage": "en-AU"
+      },
+      {
+        // Entity 3: Breadcrumb navigation trail
+        // Google shows this under the URL in search results — very high visibility
+        "@type": "BreadcrumbList",
+        "@id": `${postUrl}#breadcrumb`,
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": baseUrl
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Blogs",
+            "item": `${baseUrl}/blogs`
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": data.title,              // ← the actual blog post title from the API
+            "item": postUrl
+          }
+        ]
+      }
+    ]
+  };
+}
+```
+
+---
+
+### Step 3 — Dynamic Sitemap
+
+When you have many blog posts, you need the sitemap to list all of them — but you can't hard-code them. Fetch all slugs from your API and generate the entries dynamically.
 
 ```ts
-// app/sitemap.ts — Dynamic sitemap with all blog posts
+// app/sitemap.ts
 import { MetadataRoute } from 'next';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = 'https://bombaydecoratives.com';
+  const base = 'https://www.automatorr.com';
 
-  // Fetch all blog slugs from your CMS or database
-  const res = await fetch(`${base}/api/blogs/all-slugs`);
-  const slugs: string[] = await res.json();
+  // Fetch all blog post slugs from your API
+  // Your API should return something like: ["invoice-automation", "crm-guide", "rpa-basics"]
+  let blogSlugs: string[] = [];
+
+  try {
+    const res = await fetch(`${base}/api/blogs/all-slugs`, {
+      next: { revalidate: 3600 }  // Regenerate sitemap hourly
+    });
+    blogSlugs = await res.json();
+  } catch (err) {
+    console.error('Failed to fetch blog slugs for sitemap:', err);
+    // If the fetch fails, we still return static pages — don't crash the whole sitemap
+  }
 
   // Generate one sitemap entry per blog post
-  const blogEntries: MetadataRoute.Sitemap = slugs.map((slug) => ({
+  const blogEntries: MetadataRoute.Sitemap = blogSlugs.map((slug) => ({
     url: `${base}/blogs/${slug}`,
     lastModified: new Date(),
     changeFrequency: 'weekly',
@@ -523,29 +1228,247 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   return [
-    // Static pages
-    { url: base,              lastModified: new Date(), changeFrequency: 'weekly',  priority: 1.0 },
-    { url: `${base}/blogs`,   lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.8 },
+    // Static pages — always present
+    { url: base,                  lastModified: new Date(), changeFrequency: 'weekly',  priority: 1.0 },
+    { url: `${base}/about`,       lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${base}/blogs`,       lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.8 },
+    { url: `${base}/contact-us`,  lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.6 },
 
-    // Dynamically generated blog post pages
+    // Dynamic blog post pages — generated from API data
     ...blogEntries,
   ];
 }
 ```
 
-> This pattern scales to any size — product pages, case studies, user profiles — anything driven by dynamic data can be automatically represented in your sitemap.
+---
+
+### The Full File Together
+
+Here is the complete `app/blogs/[slug]/page.tsx` — everything assembled into one production-ready file.
+
+```tsx
+// app/blogs/[slug]/page.tsx
+import { Metadata, ResolvingMetadata } from 'next';
+import BlogHero from '@/src/sections/blog/hero';
+import BlogBody from '@/src/sections/blog/body';
+import BlogRelated from '@/src/sections/blog/related';
+
+// ─────────────────────────────────────────────
+// Type definitions
+// ─────────────────────────────────────────────
+type PageProps = {
+  params: Promise<{ slug: string }>;
+};
+
+type BlogData = {
+  title: string;
+  subheading: string;
+  image: string;
+  tags: string[];
+  author: string;
+  createdAt: string;
+  updatedAt?: string;
+  content: string;
+};
+
+const BASE_URL = 'https://www.automatorr.com';
+
+// ─────────────────────────────────────────────
+// Fetch helper (used by both functions below)
+// next: { revalidate: 3600 } means Next.js caches the result for 1 hour.
+// Both generateMetadata and the Page component call this — Next.js
+// deduplicates the network request automatically (only one real fetch).
+// ─────────────────────────────────────────────
+async function getBlogData(slug: string): Promise<BlogData | null> {
+  try {
+    const res = await fetch(
+      `${BASE_URL}/api/blogs/${slug}`,
+      { next: { revalidate: 3600 } }
+    );
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────
+// Dynamic Metadata
+// ─────────────────────────────────────────────
+export async function generateMetadata(
+  { params }: PageProps
+): Promise<Metadata> {
+  const { slug } = await params;
+  const data = await getBlogData(slug);
+  const postUrl = `${BASE_URL}/blogs/${slug}`;
+
+  if (!data) {
+    return {
+      title: 'Blog Post | Automatorr',
+      description: 'Read our latest insights on automation and technology.',
+    };
+  }
+
+  return {
+    title: `${data.title} | Automatorr Blog`,
+    description: data.subheading,
+    keywords: data.tags,
+    alternates: { canonical: postUrl },
+    openGraph: {
+      title: data.title,
+      description: data.subheading,
+      url: postUrl,
+      siteName: 'Automatorr',
+      locale: 'en_AU',
+      type: 'article',
+      publishedTime: data.createdAt,
+      authors: [data.author ?? 'Automatorr'],
+      images: [{ url: data.image, width: 1200, height: 630, alt: data.title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: data.title,
+      description: data.subheading,
+      images: [{ url: data.image, alt: data.title }],
+    },
+  };
+}
+
+// ─────────────────────────────────────────────
+// JSON-LD builder
+// ─────────────────────────────────────────────
+function buildBlogJsonLd(data: BlogData, slug: string) {
+  const postUrl = `${BASE_URL}/blogs/${slug}`;
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": `${postUrl}#webpage`,
+        "url": postUrl,
+        "name": data.title,
+        "description": data.subheading,
+        "isPartOf": { "@id": `${BASE_URL}/#website` },
+        "primaryImageOfPage": {
+          "@type": "ImageObject",
+          "url": data.image,
+          "width": 1200,
+          "height": 630,
+          "caption": data.title
+        },
+        "breadcrumb": { "@id": `${postUrl}#breadcrumb` },
+        "inLanguage": "en-AU"
+      },
+      {
+        "@type": "BlogPosting",
+        "@id": `${postUrl}#article`,
+        "headline": data.title,
+        "description": data.subheading,
+        "url": postUrl,
+        "datePublished": data.createdAt,
+        "dateModified": data.updatedAt ?? data.createdAt,
+        "author": {
+          "@type": "Person",
+          "name": data.author ?? "Automatorr Team"
+        },
+        "publisher": { "@id": `${BASE_URL}/#organization` },
+        "image": {
+          "@type": "ImageObject",
+          "url": data.image,
+          "width": 1200,
+          "height": 630
+        },
+        "keywords": data.tags?.join(", "),
+        "mainEntityOfPage": { "@id": `${postUrl}#webpage` },
+        "inLanguage": "en-AU"
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${postUrl}#breadcrumb`,
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home",  "item": BASE_URL },
+          { "@type": "ListItem", "position": 2, "name": "Blogs", "item": `${BASE_URL}/blogs` },
+          { "@type": "ListItem", "position": 3, "name": data.title, "item": postUrl }
+        ]
+      }
+    ]
+  };
+}
+
+// ─────────────────────────────────────────────
+// Page Component
+// ─────────────────────────────────────────────
+export default async function BlogPostPage({ params }: PageProps) {
+  const { slug } = await params;
+  const data = await getBlogData(slug);
+
+  // Handle 404 gracefully if post doesn't exist
+  if (!data) {
+    return <div>Post not found.</div>;
+  }
+
+  const jsonLd = buildBlogJsonLd(data, slug);
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <BlogHero title={data.title} image={data.image} author={data.author} date={data.createdAt} />
+      <BlogBody content={data.content} />
+      <BlogRelated tags={data.tags} currentSlug={slug} />
+    </>
+  );
+}
+```
+
+**The complete data flow visualised:**
+
+```
+/blogs/invoice-automation
+         │
+         ▼
+     slug = "invoice-automation"
+         │
+         ├──────────────────────────────────────────────┐
+         │                                              │
+         ▼                                              ▼
+  generateMetadata()                         Page Component
+  getBlogData("invoice-automation")          getBlogData("invoice-automation")
+         │                                              │
+         │   [Next.js deduplicates — 1 real fetch]      │
+         │                                              │
+         ▼                                              ▼
+  { title, subheading,              { title, subheading,
+    image, tags, author,              image, tags, author,
+    createdAt, ... }                  createdAt, content, ... }
+         │                                              │
+         ▼                                              ▼
+  <head>                             <body>
+    <title>Invoice Automation          <script type="application/ld+json">
+      | Automatorr Blog</title>          { @graph: [WebPage, BlogPosting,
+    <meta description="..."/>               BreadcrumbList] }
+    <meta og:title="..."/>             </script>
+    <meta og:image="..."/>             <BlogHero ... />
+  </head>                              <BlogBody ... />
+```
 
 ---
 
 ## Quick Reference Cheatsheet
 
 ```
-SEO Type        | Controls                    | Next.js File
-─────────────────────────────────────────────────────────────
-On-Page         | Metadata, headings, content | app/page.tsx (metadata export)
-Technical       | Sitemap, robots, speed      | app/sitemap.ts, app/robots.ts
-Off-Page        | Backlinks, brand mentions   | (External — no code needed)
-Dynamic SEO     | Per-page generated metadata | generateMetadata() function
+SEO Type        | Controls                        | Next.js File / Location
+──────────────────────────────────────────────────────────────────────────────
+On-Page         | Metadata, headings, content      | app/page.tsx (metadata export)
+Technical       | Sitemap, robots, speed           | app/sitemap.ts, app/robots.ts
+Off-Page        | Backlinks, brand mentions        | (External — no code needed)
+Dynamic SEO     | Per-page generated metadata      | generateMetadata() function
+JSON-LD Static  | Page entity, org, person schemas | Inline in page.tsx component
+JSON-LD Dynamic | Article, breadcrumb, product     | Built from API data in page.tsx
+JSON-LD Global  | Organization, WebSite schemas    | app/layout.tsx
 ```
 
 | Task | Where |
@@ -553,8 +1476,27 @@ Dynamic SEO     | Per-page generated metadata | generateMetadata() function
 | Static page metadata | `export const metadata` in a Server Component |
 | Dynamic page metadata | `export async function generateMetadata()` |
 | Sitemap (static) | `app/sitemap.ts` or `public/sitemap.xml` |
-| Robots (static) | `app/robots.ts` or `public/robots.txt` |
-| Structured data (JSON-LD) | Inline `<script type="application/ld+json">` in layout |
+| Robots | `app/robots.ts` or `public/robots.txt` |
+| JSON-LD — site-wide brand data | `<script>` in `app/layout.tsx` |
+| JSON-LD — per page (static) | `const jsonLd = {...}` then `<script>` in page component |
+| JSON-LD — per page (dynamic) | Build from API data inside the page component after fetching |
 | OG image generation | `app/opengraph-image.tsx` (Next.js built-in) |
+| Test your JSON-LD | [Google Rich Results Test](https://search.google.com/test/rich-results) |
+| Validate schema structure | [Schema.org Validator](https://validator.schema.org) |
 
-> **Remember:** Static metadata → Server Component only. `generateMetadata` → also Server Component only. Client Components (`"use client"`) cannot export metadata — Next.js will silently ignore it.
+**JSON-LD `@id` naming conventions:**
+
+| Entity | Recommended `@id` |
+|---|---|
+| Organization | `https://www.yourdomain.com/#organization` |
+| WebSite | `https://www.yourdomain.com/#website` |
+| WebPage | `https://www.yourdomain.com/page-path#webpage` |
+| Article | `https://www.yourdomain.com/blogs/slug#article` |
+| BreadcrumbList | `https://www.yourdomain.com/page-path#breadcrumb` |
+| Person (founder) | `https://www.yourdomain.com/#founder` |
+
+> **Remember:**
+> - Static metadata and `generateMetadata` → **Server Components only**. Client Components (`"use client"`) cannot export metadata.
+> - `Organization` + `WebSite` JSON-LD → define **once** in `layout.tsx`, reference everywhere else.
+> - `WebPage` + `BlogPosting` + `BreadcrumbList` → define **per page**, built from live data on dynamic routes.
+> - Always test with [Google's Rich Results Test](https://search.google.com/test/rich-results) after deploying.
