@@ -241,7 +241,7 @@ Next.js provides first-class SEO support through its Metadata API, built-in file
 
 ### 1 — Metadata
 
-The `metadata` export in Next.js automatically generates `<title>`, `<meta>`, Open Graph, and Twitter Card tags.
+The `metadata` export in Next.js automatically generates `<title>`, `<meta>`, Open Graph, and Twitter Card tags. it must be used in server components  and each pages in next js has its own metadata to represent that particular page.
 
 ```ts
 // app/page.tsx (Server Component)
@@ -310,7 +310,7 @@ export const metadata: Metadata = {
 
 ### 2 — Sitemap
 
-In Next.js, create `app/sitemap.ts` and it automatically generates `/sitemap.xml`.
+In Next.js, create `app/sitemap.ts` and it automatically generates `/sitemap.xml`. sitemap lists all the endpoints available in your app.
 
 ```ts
 // app/sitemap.ts
@@ -421,7 +421,7 @@ Sitemap: https://www.automatorr.com/sitemap.xml
 
 Static metadata works great for fixed pages, but what about **blog posts, product pages, or any URL with dynamic content**? That's where `generateMetadata` comes in.
 
-Instead of writing metadata manually, Next.js fetches the data for that specific page and generates metadata from it — automatically, per page.
+Instead of writing metadata manually, Next.js fetches the data for that specific page and generates metadata from it — automatically, per page. what we often do when we work in /blogs is first we let the blogs page i.e slug
 
 ```ts
 // app/blogs/[slug]/page.tsx
